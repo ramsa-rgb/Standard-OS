@@ -188,6 +188,7 @@ pciwordread:
     mov dx, 0xcfc
     in ax, dx
 
+    ; dx 반환
     ret
 
 

@@ -1,0 +1,26 @@
+cl = C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x86\cl.exe
+link = C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x86\link.exe
+
+all: bin/standardos.iso
+
+bin/standardos.iso: BOOTINBIOS BOOTINUEFI
+	xorriso -as mkisofs -o bin/standardos.iso -iso-level 4 -r -J -eltorito-alt-boot -b BOOT/BIOS/BOOT -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e BOOT/UEFI/ESP.img -no-emul-boot iso/
+
+BOOTINBIOS: src/BOOT/BIOS/main.asm
+	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
+
+BOOTINUEFI: src/BOOT/UEFI/main.c
+	$(cl) /Isrc/BOOT/UEFI /arch:IA32 /nologo /c /GS- /GR- /Oi- src/BOOT/UEFI/main.c /Foobj/BOOT/UEFI/main.obj
+	$(link) /SUBSYSTEM:EFI_APPLICATION /ENTRY:EFI_MAIN /MACHINE:X86 /OUT:obj/BOOT/UEFI/BOOTIA32.EFI obj/BOOT/UEFI/main.obj
+
+	del iso\BOOT\UEFI\ESP.img
+	fsutil file createnew iso/BOOT/UEFI/ESP.img 10485760
+	mkfs.vfat iso/BOOT/UEFI/ESP.img
+
+	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI
+	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI/BOOT
+	mcopy -i iso/BOOT/UEFI/ESP.img obj/BOOT/UEFI/BOOTIA32.EFI ::/EFI/BOOT
+runuefi:
+	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-11.1,acpi=on,usb=on,sata=on -drive if=pflash,file="C:\Program Files\qemu\share\edk2-i386-code.fd",format=raw,index=0 -cdrom bin/standardos.iso -monitor stdio
+runbios:
+	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-11.1,acpi=on,usb=on,sata=on -cdrom bin/standardos.iso -monitor stdio

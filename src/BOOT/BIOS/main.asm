@@ -188,9 +188,7 @@ pciwordread:
     mov dx, 0xcfc
     in ax, dx
 
-    cli
-    hlt
-    jmp $
+    ret
 
 
 [BITS 16]

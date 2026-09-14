@@ -22,7 +22,7 @@ BOOTINUEFI: src/BOOT/UEFI/main.c
 	lld-link /entry:EFI_MAIN /subsystem:EFI_APPLICATION /machine:X86 /out:obj/BOOT/UEFI/BOOTIA32.EFI obj/BOOT/UEFI/main.obj
 
 	rm -f iso/BOOT/UEFI/ESP.img
-    dd if=/dev/zero of=iso/BOOT/UEFI/ESP.img bs=10485760 count=1
+	dd if=/dev/zero of=iso/BOOT/UEFI/ESP.img bs=10485760 count=1
 endif
 BOOTINUEFI: src/BOOT/UEFI/main.c
 	mkfs.vfat iso/BOOT/UEFI/ESP.img

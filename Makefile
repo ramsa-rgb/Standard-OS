@@ -21,6 +21,6 @@ BOOTINUEFI: src/BOOT/UEFI/main.c
 	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI/BOOT
 	mcopy -i iso/BOOT/UEFI/ESP.img obj/BOOT/UEFI/BOOTIA32.EFI ::/EFI/BOOT
 runuefi:
-	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-11.1,acpi=on,usb=on,sata=on -drive if=pflash,file="C:\Program Files\qemu\share\edk2-i386-code.fd",format=raw,index=0 -cdrom bin/standardos.iso -monitor stdio
+	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-11.1,acpi=on,usb=on,sata=on -cpu Skylake-Client,+x2apic -m 2G -drive if=pflash,file="C:\Program Files\qemu\share\edk2-i386-code.fd",format=raw,index=0 -cdrom bin/standardos.iso -monitor stdio
 runbios:
-	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-11.1,acpi=on,usb=on,sata=on -cdrom bin/standardos.iso -monitor stdio
+	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-11.1,acpi=on,usb=on,sata=on -cpu Skylake-Client,+x2apic -m 2G -cdrom bin/standardos.iso -monitor stdio

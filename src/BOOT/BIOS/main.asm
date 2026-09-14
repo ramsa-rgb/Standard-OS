@@ -60,9 +60,8 @@ boot:
 
         cmp eax, 534D4150h
         jne e820.loopend
-
-        xor ch, ch
-        add di, cx
+        
+        add di, 24
 
         cmp ebx, 0
         je e820.loopend
@@ -70,6 +69,27 @@ boot:
     e820.loopend:
 
     mov [E820END], di
+
+    ; Get 8x16 Pointer
+    mov ax, 0x1130
+    mov bh, 6h
+
+    int 10h
+
+    ; Copy 8x16 Character (At 0x10000)
+    mov ax, es
+    mov ds, ax
+
+    mov ax, 0x1000
+    mov es, ax
+
+    mov si, bp
+    xor di, di
+
+    mov cx, 2048 
+
+    cld
+    rep movsw
 
     ; 32bit protected mode
     cli
@@ -104,11 +124,15 @@ print:
 
 [BITS 32]
 protected_main:
-    mov ax, 0x10
-
+    mov ax, 0x10 ; 커널 데이터
     mov ds, ax
-    mov es, ax
+
+    mov ax, 0x10 ; 커널 스택
     mov ss, ax
+
+    mov ax, 0x28
+    ltr ax
+
     mov esp, 0x9fc00
 
     xor eax, eax
@@ -121,6 +145,12 @@ protected_main:
     mov eax, [ebx + 0x28]
 
     mov [FrameBuffer], eax
+
+    ; Pitch 얻기
+    mov ebx, VBEMODE
+    mov ax, [ebx + 0x10]
+
+    mov [Pitch], ax
 
     mov eax, E820END
 
@@ -135,9 +165,157 @@ protected_main:
 
     add esp, 16
 
+    mov eax, 0
+    mov ebx, 0
+    mov dword [Color], 0x00FFFFFF
+    mov edx, Msg0
+
+    call gprint
+
+    ; mov eax, 1
+    ; cpuid
+
     cli
     hlt
     jmp $
+
+gprint:
+    ; eax row
+    ; ebx col
+    ; ecx charbuffer
+    ; edx string
+
+    push eax
+    push ebx
+    push ecx
+    push ebp
+    push esi
+    push edi
+
+    imul eax, 16
+    imul ebx, 8
+
+    gprint.charloop:
+        xor ecx, ecx
+
+        mov cl, [edx]
+
+        imul ecx, 10h
+        add ecx, 0x10000 ; char 폰트 있는 주소로 정의
+
+        ; ebp로 카운트
+        xor ebp, ebp
+
+        push eax
+
+        gprint.drawloop:
+
+            push ecx
+            mov ecx, [ecx]
+
+            ; 비트 카운트
+            xor esi, esi
+            ; 줄 카운트
+            xor edi, edi
+
+            push ebx
+
+            gprint.drawloop.bitloop:
+                push edi
+                push esi
+
+                mov edi, esi
+                and edi, 7
+                xor edi, 7
+
+                and esi, ~7
+                add esi, edi
+
+                bt ecx, esi
+
+                pop esi
+                pop edi
+
+                jnc no
+
+                yes:
+                    call drawpixel
+                no:
+
+                add esi, 1
+                add edi, 1
+                add ebx, 1
+
+                cmp edi, 8
+                jne gprint.drawloop.bitloop.rowupend
+
+                gprint.drawloop.bitloop.rowup:
+                    add eax, 1
+                    xor edi, edi
+                    pop ebx
+
+                    push ebx
+                gprint.drawloop.bitloop.rowupend:
+
+                cmp esi, 32
+                jne gprint.drawloop.bitloop
+            gprint.drawloop.bitloopend:
+            
+            pop ebx
+
+            mov [0x100000 + ebp*4], ecx
+
+            pop ecx
+
+            add ecx, 4
+            add ebp, 1
+
+            cmp ebp, 4
+            jne gprint.drawloop
+        gprint.drawloopend:
+
+        pop eax
+    
+        add edx, 1
+        add ebx, 8
+
+        cmp byte [edx], 0
+        jnz gprint.charloop
+    gprint.charloopend:
+
+    pop edi
+    pop esi
+    pop ebp
+    pop ecx
+    pop ebx
+    pop eax
+
+    ret
+
+drawpixel:
+    ; eax row
+    ; ebx col
+
+    push eax
+    push ebx
+    push ecx
+
+    imul eax, [Pitch]
+    imul ebx, 3
+
+    add ebx, eax
+
+    add ebx, [FrameBuffer]
+
+    mov ecx, [Color]
+    mov dword [ebx], ecx
+
+    pop ecx
+    pop ebx
+    pop eax
+
+    ret
+
 
 pciwordread:
     ; esp+16 bus
@@ -194,7 +372,7 @@ pciwordread:
 
 [BITS 16]
 section .data
-    Msg0 db "Standard OS is Booting...", 0
+    Msg0 db "Standard OS is Booting... SON", 0
 
     GDT32:
         GDT32.NULL:
@@ -204,19 +382,40 @@ section .data
             db 0 ; Access
             db 0 ; Flags | Limit Top
             db 0 ; Base Top
-        GDT32.CODE:
+        GDT32.KRNLCODE:
             dw 0xFFFF ; Limit Down
             dw 0 ; Base Down
             db 0 ; Base Middle
             db 0b10011010 ; Access
             db 0b11001111 ; Flags | Limit Top
             db 0 ; Base Top
-        GDT32.DATA:
+        GDT32.KRNLDATA:
             dw 0xFFFF ; Limit Down
             dw 0 ; Base Down
             db 0 ; Base Middle
             db 0b10010011 ; Access
             db 0b11001111 ; Flags | Limit Top
+            db 0 ; Base Top
+        GDT32.USERCODE:
+            dw 0xFFFF ; Limit Down
+            dw 0 ; Base Down
+            db 0 ; Base Middle
+            db 0b11111010 ; Access
+            db 0b11001111 ; Flags | Limit Top
+            db 0 ; Base Top
+        GDT32.USERDATA:
+            dw 0xFFFF ; Limit Down
+            dw 0 ; Base Down
+            db 0 ; Base Middle
+            db 0b11110011 ; Access
+            db 0b11001111 ; Flags | Limit Top
+            db 0 ; Base Top
+        GDT32.TSS: ; 0x68
+            dw 0x68 ; Limit Down
+            dw 0 ; Base Down
+            db 0x10 ; Base Middle
+            db 0b10001001 ; Access
+            db 0b00000000 ; Flags | Limit Top
             db 0 ; Base Top
     GDTR:
         dw GDTR - GDT32
@@ -225,3 +424,8 @@ section .data
     VBEMODE resb 256
     FrameBuffer dd 0
     E820END dd 0
+    Pitch dd 0
+
+    Color dd 0
+    Row dw 0
+    Columns dw 0

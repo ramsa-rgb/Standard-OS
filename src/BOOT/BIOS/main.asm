@@ -372,7 +372,7 @@ pciwordread:
 
 [BITS 16]
 section .data
-    Msg0 db "Standard OS is Booting... SON", 0
+    Msg0 db "Standard OS is Booting... ROYMAN HEADLESS", 0
 
     GDT32:
         GDT32.NULL:

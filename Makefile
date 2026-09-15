@@ -23,6 +23,7 @@ BOOTINBIOS: src/BOOT/BIOS/main.asm
 
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 else
+BOOTINBIOS:
 	mkdir obj
 	mkdir obj/BOOT
 	mkdir obj/BOOT/BIOS

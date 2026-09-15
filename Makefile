@@ -6,11 +6,9 @@ all: bin/standardos.iso
 	mkdir obj\BOOT
 	mkdir obj\BOOT\BIOS
 	mkdir obj\BOOT\UEFI
-
 	mkdir obj\KRNL
 
 	mkdir iso
-
 	mkdir iso\BOOT
 	mkdir iso\BOOT\BIOS
 	mkdir iso\BOOT\UEFI

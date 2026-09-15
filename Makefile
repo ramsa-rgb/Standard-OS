@@ -26,10 +26,11 @@ BOOTINBIOS: src/BOOT/BIOS/main.asm
 
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 else
+BOOTINBIOS: src/BOOT/BIOS/main.asm
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 endif
 else
-BOOTINBIOS:
+BOOTINBIOS: src/BOOT/BIOS/main.asm
 ifeq ($(fe), )
 	mkdir obj
 	mkdir obj/BOOT
@@ -46,6 +47,7 @@ ifeq ($(fe), )
 
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 else
+BOOTINBIOS: src/BOOT/BIOS/main.asm
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 endif
 endif

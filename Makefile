@@ -16,6 +16,12 @@ BOOTINUEFI: src/BOOT/UEFI/main.c
 
 	del iso\BOOT\UEFI\ESP.img
 	fsutil file createnew iso/BOOT/UEFI/ESP.img 10485760
+
+	mkfs.vfat iso/BOOT/UEFI/ESP.img
+
+	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI
+	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI/BOOT
+	mcopy -i iso/BOOT/UEFI/ESP.img obj/BOOT/UEFI/BOOTIA32.EFI ::/EFI/BOOT
 else
 BOOTINUEFI: src/BOOT/UEFI/main.c
 	clang -c -ffreestanding -nostdlib -fno-builtin -nostdinc++ --target=i686-pc-windows-msvc -Isrc/BOOT/UEFI src/BOOT/UEFI/main.c -o obj/BOOT/UEFI/main.obj
@@ -23,13 +29,13 @@ BOOTINUEFI: src/BOOT/UEFI/main.c
 
 	rm -f iso/BOOT/UEFI/ESP.img
 	dd if=/dev/zero of=iso/BOOT/UEFI/ESP.img bs=10485760 count=1
-endif
-BOOTINUEFI: src/BOOT/UEFI/main.c
+
 	mkfs.vfat iso/BOOT/UEFI/ESP.img
 
 	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI
 	mmd -i iso/BOOT/UEFI/ESP.img ::/EFI/BOOT
 	mcopy -i iso/BOOT/UEFI/ESP.img obj/BOOT/UEFI/BOOTIA32.EFI ::/EFI/BOOT
+endif
 
 ifeq ($(OS), Windows_NT)
 runuefi:
@@ -41,3 +47,23 @@ endif
 
 runbios:
 	qemu-system-x86_64 -device vmware-svga,vgamem_mb=256 -device e1000 -machine pc-q35-10.2,acpi=on,usb=on,sata=on -cpu Skylake-Client,+x2apic -m 2G -cdrom bin/standardos.iso -monitor stdio
+
+ifeq ($(OS), Windows_NT)
+clean:
+	del obj\BOOT\UEFI\BOOTIA32.EFI
+	del obj\BOOT\UEFI\main.obj
+
+	del iso\BOOT\BIOS\BOOT
+	del iso\BOOT\UEFI\ESP.img
+
+	del bin\standardos.iso
+else
+clean:
+	rm -f obj/BOOT/UEFI/BOOTIA32.EFI
+	rm -f obj/BOOT/UEFI/main.obj
+
+	rm -f iso/BOOT/BIOS/BOOT
+	rm -f ESP.img
+
+	rm -f bin/standardos.iso
+endif

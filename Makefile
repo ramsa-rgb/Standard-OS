@@ -2,6 +2,20 @@ cl = C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.3
 link = C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x86\link.exe
 
 all: bin/standardos.iso
+	mkdir obj
+	mkdir obj\BOOT
+	mkdir obj\BOOT\BIOS
+	mkdir obj\BOOT\UEFI
+
+	mkdir obj\KRNL
+
+	mkdir iso
+
+	mkdir iso\BOOT
+	mkdir iso\BOOT\BIOS
+	mkdir iso\BOOT\UEFI
+
+	mkdir bin
 
 bin/standardos.iso: BOOTINBIOS BOOTINUEFI
 	xorriso -as mkisofs -o bin/standardos.iso -iso-level 4 -r -J -eltorito-alt-boot -b BOOT/BIOS/BOOT -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e BOOT/UEFI/ESP.img -no-emul-boot iso/

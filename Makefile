@@ -23,6 +23,10 @@ BOOTINBIOS: src/BOOT/BIOS/main.asm
 	mkdir iso\BOOT\UEFI
 
 	mkdir bin
+
+	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
+else
+	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 endif
 else
 BOOTINBIOS:
@@ -39,11 +43,12 @@ ifeq ($(fe), )
 	mkdir iso/BOOT/UEFI
 
 	mkdir bin
-endif
-endif
 
-BOOTINBIOS:
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
+else
+	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
+endif
+endif
 
 ifeq ($(OS), Windows_NT)
 BOOTINUEFI: src/BOOT/UEFI/main.c

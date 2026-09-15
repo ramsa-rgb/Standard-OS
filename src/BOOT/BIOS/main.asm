@@ -154,26 +154,105 @@ protected_main:
 
     mov eax, E820END
 
-    mov dword [esp-4], 0 ; bus
-    mov dword [esp-8], 1 ; slot
-    mov dword [esp-12], 0 ; function
-    mov dword [esp-16], 0 ; offset
+    ; pciread를 위한 코드
+    
+    mov dword [esp-4], 0 ; datasize
+    mov dword [esp-8], 0 ; bus
+    mov dword [esp-12], 1 ; slot
+    mov dword [esp-16], 0 ; function
+    mov dword [esp-20], 0 ; offset
 
-    sub esp, 16
+    sub esp, 20
 
-    call pciwordread
+    call pciread
 
-    add esp, 16
+    add esp, 20
 
-    mov eax, 0
-    mov ebx, 0
+    ; pciread를 위한 코드 끝
+
+    ; 문자열 출력을 위한 코드
+
+    mov eax, [Row]
+    mov ebx, [Columns]
     mov dword [Color], 0x00FFFFFF
     mov edx, Msg0
 
     call gprint
 
-    ; mov eax, 1
-    ; cpuid
+    ; 문자열 출력을 위한 코드 끝
+
+    ; pciread를 위한 코드
+    
+    mov dword [esp-4], 0 ; datasize
+    mov dword [esp-8], 0 ; bus
+    mov dword [esp-12], 31 ; slot
+    mov dword [esp-16], 2 ; function
+    mov dword [esp-20], 0 ; offset
+
+    sub esp, 20
+
+    call pciread
+
+    add esp, 20
+
+    ; pciread를 위한 코드 끝
+
+    mov eax, 1
+    cpuid
+
+    shr edx, 9
+    and edx, 1
+
+    cmp edx, 1 
+
+    jz nox2apicend
+
+    nox2apic:
+        ; 문자열 출력을 위한 코드
+    
+        mov eax, 18
+        mov ebx, 35
+        mov dword [Color], 0x00FFFFFF
+        mov edx, Msg1
+
+        call gprint
+
+        mov eax, 19
+        mov ebx, 44
+        mov dword [Color], 0x00FF0000
+        mov edx, SH
+
+        call gprint
+
+        ; 문자열 출력을 위한 코드 끝
+
+        cli
+        hlt 
+    nox2apicend:
+
+    ; APIC 베이스 얻기
+    mov ecx, 0x1B
+    rdmsr
+    
+    ; 얻은 APIC 베이스로 CPU에 APIC 등록.
+    ; apic 주소는 eax에
+
+    and eax, 0xfffff000
+
+    mov [APIC], eax
+
+    or eax, 0x800
+
+    wrmsr
+
+    mov eax, [APIC]
+    add eax, 0x30
+    mov edx, [eax]
+
+    ; apic 활성화
+    mov eax, [APIC + 0xf0]
+    add eax, 0x100
+    mov [APIC + 0xf0], eax
 
     cli
     hlt
@@ -275,7 +354,8 @@ gprint:
         gprint.drawloopend:
 
         pop eax
-    
+
+        add dword [Columns], 1
         add edx, 1
         add ebx, 8
 
@@ -284,6 +364,15 @@ gprint:
 
         gprint.charloop.rowup:
             xor ebx, ebx
+            mov dword [Columns], 0
+
+            push ebx
+
+            mov ebx, [Row]
+            add ebx, 1
+
+            pop ebx
+
             add eax, 16
         gprint.charloop.rowupend:
 
@@ -325,7 +414,8 @@ drawpixel:
     ret
 
 
-pciwordread:
+pciread:
+    ; esp+20 datasize
     ; esp+16 bus
     ; esp+12 slot
     ; esp+8 function
@@ -372,15 +462,35 @@ pciwordread:
     xor eax, eax
 
     mov dx, 0xcfc
-    in ax, dx
 
-    ; dx 반환
-    ret
+    ; esp+20이 0이면 eax
+    ; 1이면 ax
+    ; 2면 al
+
+    mov ecx, [esp+20]
+    cmp ecx, 1
+
+    jg two
+    jl zero
+    jz one
+
+    zero:
+        in eax, dx
+        ret
+    one:
+        in ax, dx
+        ret
+    two:
+        in al, dx
+        ret
 
 
 [BITS 16]
 section .data
     Msg0 db "Standard OS is Booting...", 0
+    Msg1 db "The CPU wasn't support x2apic.", 0
+
+    SH db "System Halted", 0
     GDT32:
         GDT32.NULL:
             dw 0 ; Limit Down
@@ -433,6 +543,8 @@ section .data
     E820END dd 0
     Pitch dd 0
 
+    APIC dq 0
+
     Color dd 0
-    Row dw 0
-    Columns dw 0
+    Row dd 0
+    Columns dd 0

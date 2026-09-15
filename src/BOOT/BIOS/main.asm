@@ -279,6 +279,14 @@ gprint:
         add edx, 1
         add ebx, 8
 
+        cmp ebx, 800
+        jnz gprint.charloop.rowupend
+
+        gprint.charloop.rowup:
+            xor ebx, ebx
+            add eax, 16
+        gprint.charloop.rowupend:
+
         cmp byte [edx], 0
         jnz gprint.charloop
     gprint.charloopend:
@@ -373,7 +381,6 @@ pciwordread:
 [BITS 16]
 section .data
     Msg0 db "Standard OS is Booting...", 0
-
     GDT32:
         GDT32.NULL:
             dw 0 ; Limit Down

@@ -1,8 +1,13 @@
 cl = C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x86\cl.exe
 link = C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x86\link.exe
 
-ifeq ($(OS), Windows_NT)
 all: bin/standardos.iso
+
+bin/standardos.iso: BOOTINBIOS BOOTINUEFI
+	xorriso -as mkisofs -o bin/standardos.iso -iso-level 4 -r -J -eltorito-alt-boot -b BOOT/BIOS/BOOT -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e BOOT/UEFI/ESP.img -no-emul-boot iso/
+
+ifeq ($(OS), Windows_NT)
+BOOTINBIOS: src/BOOT/BIOS/main.asm
 	mkdir obj
 	mkdir obj\BOOT
 	mkdir obj\BOOT\BIOS
@@ -15,8 +20,9 @@ all: bin/standardos.iso
 	mkdir iso\BOOT\UEFI
 
 	mkdir bin
+
+	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
 else
-all: bin/standardos.iso
 	mkdir obj
 	mkdir obj/BOOT
 	mkdir obj/BOOT/BIOS
@@ -29,13 +35,9 @@ all: bin/standardos.iso
 	mkdir iso/BOOT/UEFI
 
 	mkdir bin
-endif
 
-bin/standardos.iso: BOOTINBIOS BOOTINUEFI
-	xorriso -as mkisofs -o bin/standardos.iso -iso-level 4 -r -J -eltorito-alt-boot -b BOOT/BIOS/BOOT -no-emul-boot -boot-load-size 4 -boot-info-table -eltorito-alt-boot -e BOOT/UEFI/ESP.img -no-emul-boot iso/
-
-BOOTINBIOS: src/BOOT/BIOS/main.asm
 	nasm -f bin src/BOOT/BIOS/main.asm -o iso/BOOT/BIOS/BOOT
+endif
 
 ifeq ($(OS), Windows_NT)
 BOOTINUEFI: src/BOOT/UEFI/main.c
